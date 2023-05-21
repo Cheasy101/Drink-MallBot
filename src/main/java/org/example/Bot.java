@@ -35,7 +35,7 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     private enum options {
-        BuyingStatus, WORK, COUNTING_TICKETS, ADMINROOT
+        BuyingStatus, WORK, COUNTING_TICKETS, ADMINOPTIONS, UPDADESTATUS, ADMINROOT
     }
 
     private List<Long> adminIds = List.of(941087528L);
@@ -63,8 +63,8 @@ public class Bot extends TelegramLongPollingBot {
                         sendText(id, replyText);
                         if (isAdminMode) {
                             option = options.ADMINROOT;
-                            sendText(id, "ща клава вылезет");
-                        } else option = options.WORK;
+                        }
+//                        else option = options.WORK;
 
                     } else {
                         sendText(id, "У вас нет прав на выполнение этой команды");
@@ -97,9 +97,7 @@ public class Bot extends TelegramLongPollingBot {
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
-                    System.out.println("должно 1");
                     sendText(id, showEvents(id));
-                    System.out.println("должно 2");
                     option = options.WORK;
                 }
                 case "/buy" -> {
@@ -118,25 +116,56 @@ public class Bot extends TelegramLongPollingBot {
             switch (option) {
                 case ADMINROOT -> {
                     sendReplyKeyboardMessage(id, "Клава кока", Arrays.asList("Удалить Мероприятие", "Изменить мероприятие", "Добавить Новое мероприятие"));
+                    option = options.ADMINOPTIONS;
+                    System.out.println("Дошли до седа");
                 }
+                /**
+                 * Блок работает только тогда, когда мы в админе понятное дело
+                 */
+                case ADMINOPTIONS -> {
+                    System.out.println("Ну тут то я етсь хотябы?");
+                    switch (txt) {
+                        case "Изменить мероприятие" -> {
+                            sendText(id, "чото происходит");
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
 
+                            sendText(id, "Выберите мероприятие, которое хотите изменить");
+                            sendText(id, showEvents(id));
+                            option = options.BuyingStatus;
+                        }case "Удалить Мероприятие" -> {
+                            sendText(id,"Выберите мероприятие, которое хотите изменить");
+                        }
+                    }
+                    System.out.println("я типа текст пролетаю ?");
+                }
                 case BuyingStatus -> {
                     /* я думал по местить в отдельный метод, но решил не засорять методами код. пускай так будет*/
                     variable = Integer.parseInt(txt); // тут выбранный варик
                     currentEvent = getObjectById(txt); // тут получаем все данные о ивенте
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                    action(id, currentEvent);
+//                    try {
+//                        Thread.sleep(1000);
+//                    } catch (InterruptedException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                    sendText(id, "вы выбрали мероприятие --> " + currentEvent);
+//                    try {
+//                        Thread.sleep(1000);
+//                    } catch (InterruptedException e) {
+//                        throw new RuntimeException(e);
+//                    }
+                    if (isAdminMode) {
+                        sendText(id, "Напишите Полностью все данные, которые собираетесь изменить (и сначала айди в качестве указателя на это мероприятие)");
+                        option = options.UPDADESTATUS;
+                        System.out.println("я в апдейт статусе");
+                    } else {
+                        sendText(id, "Укажите количество билетов, которые вы хотите купить");
+                        option = options.COUNTING_TICKETS;
                     }
-                    sendText(id, "вы выбрали мероприятие --> " + currentEvent);
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    sendText(id, "Укажите количество билетов, которые вы хотите купить");
-                    option = options.COUNTING_TICKETS;
                 }
                 case COUNTING_TICKETS -> {
                     try {
@@ -145,7 +174,51 @@ public class Bot extends TelegramLongPollingBot {
                         throw new RuntimeException(e);
                     }
                 }
-            } // тут тхт выступает как кол-во билетов
+                case UPDADESTATUS -> {
+                    System.out.println("Пытаемся апдейтить");
+                    System.out.println("Пытаемся в массив то засунули");
+                    System.out.printf((txt) + "%n");
+
+                    if (isValidEventData(txt)) {
+                        String[] str = txt.split(" ");
+                        currentEvent = new Events(Integer.parseInt(str[0]), str[1], str[2], Integer.parseInt(str[3]), Integer.parseInt(str[4]));
+                        updateDataById(Integer.parseInt(str[0]), currentEvent, "UPDATE Events SET id = ?, event_type = ?, name_ = ?, price = ?, number_of_tickets = ? WHERE id = ?");
+                        sendText(id, "Все прошло успешно");
+                    } else {
+                        sendText(id, "Неверный формат данных. Пожалуйста, введите данные в следующем формате: \n'id мероприятия '_' тип мероприятия '_' " +
+                                "название мероприятия '_' стоимость биллетов '_' количество билетов '");
+                    }
+                    option = options.WORK;
+                }
+            }
+        }
+    } // тут тхт выступает как кол-во билетов
+
+    public void action(Long id, Events currentEvent){
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        sendText(id, "вы выбрали мероприятие --> " + this.currentEvent);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    private boolean isValidEventData(String messageText) {
+        String[] str = messageText.split(" ");
+        if (str.length != 5) {
+            return false;
+        }
+        try {
+            Integer.parseInt(str[0]);
+            Integer.parseInt(str[3]);
+            Integer.parseInt(str[4]);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 
