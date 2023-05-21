@@ -38,7 +38,7 @@ public class Bot extends TelegramLongPollingBot {
         BuyingStatus, WORK, COUNTING_TICKETS, ADMINOPTIONS, UPDADESTATUS, DELETESTATUS, ADDSTATUS, ADMINROOT
     }
 
-    private List<Long> adminIds = List.of(941087528L);
+    private final List<Long> adminIds = List.of(941087528L);
     private options option = options.WORK;
     int variable;
     Events currentEvent;
@@ -64,7 +64,7 @@ public class Bot extends TelegramLongPollingBot {
                         if (isAdminMode) {
                             option = options.ADMINROOT;
                         }
-//                        else option = options.WORK;
+                        else option = options.WORK;
 
                     } else {
                         sendText(id, "У вас нет прав на выполнение этой команды");
@@ -80,7 +80,9 @@ public class Bot extends TelegramLongPollingBot {
                     String str = "Добро пожаловать в бота KAZAN DRINK-MALL " + EmojiParser.parseToUnicode("‼️") +
                             "\nвы тут впервые " + EmojiParser.parseToUnicode("❓❓") + "\nиспользуйте команду /instruction";
                     sendText(id, str);
-                    option = options.WORK;
+                    if (isAdminMode) {
+                        option = options.ADMINROOT;
+                    } else option = options.WORK;
                 }
                 case "/instruction" -> {
                     try {
@@ -89,7 +91,9 @@ public class Bot extends TelegramLongPollingBot {
                         throw new RuntimeException(e);
                     }
                     sendText(id, returnInstruction());
-                    option = options.WORK;
+                    if (isAdminMode) {
+                        option = options.ADMINROOT;
+                    } else option = options.WORK;
                 }
                 case "/events" -> {
                     try {
@@ -98,7 +102,12 @@ public class Bot extends TelegramLongPollingBot {
                         throw new RuntimeException(e);
                     }
                     sendText(id, showEvents(id));
-                    option = options.WORK;
+                    if (isAdminMode) {
+                        option = options.ADMINROOT;
+                    } else {
+                        System.out.println("как бы мы уже не админ");
+                        option = options.WORK;
+                    }
                 }
                 case "/buy" -> {
                     try {
@@ -109,81 +118,81 @@ public class Bot extends TelegramLongPollingBot {
                     sendText(id, "Выберите мероприятие, на которое хотите пойти ! \n" +
                             "и самое главное: воспользуйтесь либо кнопками сообщения, либо введите айди мероприятия на которое хотите пойти");
 //                    operateFunction(id, showEvents(id));
-                    sendText(id, showEvents(id));
-                    option = options.BuyingStatus; // TODO: 19.05.2023 в идее добавить сюда клаву к сообщению
+                    sendText(id, showEvents(id));if (isAdminMode) {
+                        option = options.ADMINROOT;
+                    } else option = options.BuyingStatus;
+//                        option = options.WORK;
+//                    option = options.BuyingStatus; // TODO: 19.05.2023 в идее добавить сюда клаву к сообщению
                 }
             }
             switch (option) {
                 case ADMINROOT -> {
+                    System.out.println(" ---- МЫ В ПРАВАХ АДМИНА ----");
                     sendReplyKeyboardMessage(id, "Клава кока", Arrays.asList("Удалить Мероприятие", "Изменить мероприятие", "Добавить Новое мероприятие"));
-                    option = options.ADMINOPTIONS;
-                    System.out.println("Дошли до седа");
+                    if (isAdminMode) {
+                        option = options.ADMINOPTIONS;
+                    } else option = options.WORK;
                 }
                 /**
                  * Блок работает только тогда, когда мы в админе понятное дело
                  */
                 case ADMINOPTIONS -> {
-                    System.out.println("Ну тут то я етсь хотябы?");
+                    System.out.println("Я В ОПЦИЯХ АДМИНА");
                     switch (txt) {
                         case "Изменить мероприятие" -> {
-                            sendText(id, "чото происходит");
                             try {
                                 Thread.sleep(1000);
                             } catch (InterruptedException e) {
                                 throw new RuntimeException(e);
                             }
-
                             sendText(id, "Выберите мероприятие (по айди), которое хотите изменить");
                             sendText(id, showEvents(id));
+                            System.out.println("Должны перейти в состояние изменения мероприятия");
                             option = options.BuyingStatus;
                         }
                         case "Удалить Мероприятие" -> {
-                            sendText(id, "Выберите мероприятие (по айди), которое хотите изменить");
+                            sendText(id, "Выберите мероприятие (по айди), которое хотите удалить");
                             sendText(id, showEvents(id));
+                            System.out.println("Должны перейти в состояние удаления мероприятия");
                             option = options.DELETESTATUS;
-                        }case "Добавить мероприятие" -> {
-                            sendText(id, "Выберите мероприятие (по айди), которое хотите изменить");
+                        }
+                        case "Добавить Новое мероприятие" -> {
+                            sendText(id, "Выберите мероприятие (по айди), которое хотите добавить");
                             sendText(id, showEvents(id));
+                            System.out.println("Должны перейти в состояние добавления мероприятия");
                             option = options.ADDSTATUS;
                         }
                     }
-                    System.out.println("я типа текст пролетаю ?");
                 }
                 case BuyingStatus -> {
                     /* я думал по местить в отдельный метод, но решил не засорять методами код. пускай так будет*/
                     variable = Integer.parseInt(txt); // тут выбранный варик
                     currentEvent = getObjectById(txt); // тут получаем все данные о ивенте
-                    action(id);
-//                    try {
-//                        Thread.sleep(1000);
-//                    } catch (InterruptedException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                    sendText(id, "вы выбрали мероприятие --> " + currentEvent);
-//                    try {
-//                        Thread.sleep(1000);
-//                    } catch (InterruptedException e) {
-//                        throw new RuntimeException(e);
-//                    }
+                    chosenEvent(id);
+
                     if (isAdminMode) {
                         sendText(id, "Напишите Полностью все данные, которые собираетесь изменить (и сначала айди в качестве указателя на это мероприятие)");
+                        System.out.println("иду в апдейт статусе");
                         option = options.UPDADESTATUS;
-                        System.out.println("я в апдейт статусе");
                     } else {
                         sendText(id, "Укажите количество билетов, которые вы хотите купить");
+                        System.out.println("я в подсчете биллетов");
                         option = options.COUNTING_TICKETS;
                     }
+                }
+                case WORK -> {
                 }
                 case COUNTING_TICKETS -> {
                     try {
                         buyTickets(id, txt);
+                        System.out.println("я в работе ");
+                        option = options.WORK;
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
                 }
                 case UPDADESTATUS -> {
                     System.out.println("Пытаемся апдейтить");
-                    System.out.println("Пытаемся в массив то засунули");
                     System.out.printf((txt) + "%n");
 
                     if (isValidEventData(txt)) {
@@ -192,28 +201,66 @@ public class Bot extends TelegramLongPollingBot {
                                 Integer.parseInt(str[3]), Integer.parseInt(str[4]), str[5]);
                         updateDataById(Integer.parseInt(str[0]), currentEvent, "UPDATE Events SET id = ?, event_type = ?, name_ = ?, price = ?, number_of_tickets = ?, dataEvent = ? WHERE id = ?");
                         sendText(id, "Все прошло успешно");
+                        System.out.println("я в админе");
+                        option = options.ADMINOPTIONS;
                     } else {
                         sendText(id, "Неверный формат данных. Пожалуйста, введите данные в следующем формате: \n'id мероприятия '_' тип мероприятия '_' " +
                                 "название мероприятия '_' стоимость биллетов '_' количество билетов '");
+                        option = options.UPDADESTATUS;
                     }
-//                    option = options.WORK;
-                    option = options.ADMINOPTIONS;
-
                 }
                 case DELETESTATUS -> {
                     variable = Integer.parseInt(txt); // тут выбранный варик
                     currentEvent = getObjectById(txt); // тут получаем все данные о ивенте
-                    action(id);
+                    chosenEvent(id);
                     // TODO: 21.05.2023  если чето не сработает, то проверку на админа вставить
                     deleteEventById(variable);
                     sendText(id, "Вот список текущих мероприятий");
                     sendText(id, showEvents(id));
 //                    option = options.WORK;
+                    System.out.println("я в админе");
+                    option = options.ADMINOPTIONS;
+                }
+                case ADDSTATUS -> {
+                    sendText(id, "Ща обновимся");
+                    String[] str = txt.split(" ");
+                    System.out.println(Arrays.toString(str));
+                    currentEvent = new Events(str[0], str[1], Integer.parseInt(str[2]),
+                            Integer.parseInt(str[3]), str[4]);
+                    System.out.println(currentEvent.toString());
+                    addEvent(currentEvent);
+
+//                    option = options.WORK;
+                    System.out.println("я в админе");
                     option = options.ADMINOPTIONS;
                 }
             }
         }
     } // тут тхт выступает как кол-во билетов
+
+    private void addEvent(Events event) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = DatabaseHandler.getConnection();
+            pstmt = conn.prepareStatement("INSERT INTO Events (event_type ,name_,price,number_of_tickets, dataEvent) VALUES (?,?,?,?,?);");
+
+//            INSERT INTO Events (event_type ,name_,price,number_of_tickets, dataEvent) VALUES ('dad','mom',2,3,'2123')
+            System.out.println(event.toString());
+            pstmt.setString(1, event.getEventType());
+            pstmt.setString(2, event.getEventName());
+            pstmt.setInt(3, event.getEventPrice());
+            pstmt.setInt(4, event.getEventNumberOfTickets());
+            pstmt.setString(5, event.getEventData());
+            System.out.println(pstmt);
+            pstmt.executeUpdate();
+            // подтверждаем транзакцию
+            conn.commit();
+            System.out.println("Должен был добавить");
+        } catch (SQLException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public void deleteEventById(int id) {
         Connection conn = null;
@@ -233,6 +280,7 @@ public class Bot extends TelegramLongPollingBot {
             pstmt.executeUpdate();
             // подтверждаем транзакцию
             conn.commit();
+            System.out.println("Должен был удалить");
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         } catch (ClassNotFoundException e) {
@@ -248,7 +296,7 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
-    public void action(Long id) {
+    public void chosenEvent(Long id) {
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -264,7 +312,7 @@ public class Bot extends TelegramLongPollingBot {
 
     private boolean isValidEventData(String messageText) {
         String[] str = messageText.split(" ");
-        if (str.length != 5) {
+        if (str.length != 6) {
             return false;
         }
         try {
@@ -325,7 +373,6 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     public Events getObjectById(String id) {
-        System.out.println("я не работаю");
         Connection connection = null;
         PreparedStatement statement = null;
         ResultSet resultSet = null;
@@ -361,17 +408,12 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     public String showEvents(Long id) {
-        System.out.println(" я работаю");
         Connection connection = null;
         String str;
         try {
-            System.out.println("вот тут все норм");
             connection = DatabaseHandler.getConnection();
-
             Statement statement = connection.createStatement();
-            System.out.println("вот тут все норм");
             ResultSet resultSet = statement.executeQuery("SELECT * FROM Events");
-            System.out.println("даже запрос отправляю");
 
             sendText(id, "Вот список всех доступных мероприятий !");
             str = "";

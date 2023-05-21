@@ -17,6 +17,15 @@ public class Events {
         this.eventData = eventData;
     }
 
+    public Events(String eventType, String eventName, int eventPrice, int eventNumberOfTickets, String eventData) {
+        //спецовый объект для добавления в бд т.к айди сам встанет
+        this.eventType = eventType;
+        this.eventName = eventName;
+        this.eventPrice = eventPrice;
+        this.eventNumberOfTickets = eventNumberOfTickets;
+        this.eventData = eventData;
+    }
+
     public int getEventId() {
         return eventId;
     }
