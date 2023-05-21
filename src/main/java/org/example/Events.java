@@ -4,15 +4,17 @@ public class Events {
     int eventId;
     String eventType;
     String eventName;
+    String eventData;
     int eventPrice;
     int eventNumberOfTickets;
 
-    public Events(int eventId, String eventType, String eventName, int eventPrice, int eventNumberOfTickets) {
+    public Events(int eventId, String eventType, String eventName, int eventPrice, int eventNumberOfTickets, String eventData) {
         this.eventId = eventId;
         this.eventType = eventType;
         this.eventName = eventName;
         this.eventPrice = eventPrice;
         this.eventNumberOfTickets = eventNumberOfTickets;
+        this.eventData = eventData;
     }
 
     public int getEventId() {
@@ -55,12 +57,21 @@ public class Events {
         this.eventNumberOfTickets = eventNumberOfTickets;
     }
 
+    public String getEventData() {
+        return eventData;
+    }
+
+    public void setEventData(String eventData) {
+        this.eventData = eventData;
+    }
+
     @Override
     public String toString() {
         return eventId +
                 " " + eventType +
                 " " + eventName +
                 " " + eventPrice +
-                " " + eventNumberOfTickets;
+                " " + eventNumberOfTickets
+                +" " + eventData;
     }
 }
