@@ -10,6 +10,5 @@ public class Main {
         Bot bot = new Bot();
         botsApi.registerBot(new Bot());
         botsApi.registerBot(bot);
-
     }
 }

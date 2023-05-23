@@ -35,7 +35,7 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     private enum options {
-        BuyingStatus, WORK, COUNTING_TICKETS, ADMINOPTIONS, UPDADESTATUS, DELETESTATUS, ADDSTATUS, ADMINROOT
+        BuyingStatus, WORK, COUNTING_TICKETS, ADMINOPTIONS, UPDADESTATUS, DELETESTATUS, ADDSTATUS, FIND, Next, ADMINROOT
     }
 
     private final List<Long> adminIds = List.of(941087528L);
@@ -44,7 +44,6 @@ public class Bot extends TelegramLongPollingBot {
     Events currentEvent;
     //    long chatId;
     private boolean isAdminMode = false;
-    static ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
 
     public void onUpdateReceived(Update update) {
         var msg = update.getMessage();
@@ -116,13 +115,10 @@ public class Bot extends TelegramLongPollingBot {
                     }
                     sendText(id, "Выберите мероприятие, на которое хотите пойти ! \n" +
                             "и самое главное: воспользуйтесь либо кнопками сообщения, либо введите айди мероприятия на которое хотите пойти");
-//                    operateFunction(id, showEvents(id));
                     sendText(id, showEvents(id, "Events"));
                     if (isAdminMode) {
                         option = options.ADMINROOT;
                     } else option = options.BuyingStatus;
-//                        option = options.WORK;
-//                    option = options.BuyingStatus; // TODO: 19.05.2023 в идее добавить сюда клаву к сообщению
                 }
                 case "/myevents" -> {
 
@@ -132,7 +128,7 @@ public class Bot extends TelegramLongPollingBot {
                         throw new RuntimeException(e);
                     }
 
-                    sendText(id, showEvents(id, "UserEvents"));
+                    sendText(id, getUserEvents(Math.toIntExact(id)));
                     sendText(id, "Вашему вниманию представлены все мероприятия, на которые вы купили биллеты");
                     if (isAdminMode) {
                         option = options.ADMINROOT;
@@ -140,6 +136,17 @@ public class Bot extends TelegramLongPollingBot {
                         System.out.println("как бы мы уже не админ");
                         option = options.WORK;
                     }
+                }
+                case "/findbyname" -> {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    sendText(id, "Данная функция осуществляет поиск мероприятия по названию\n введите название мероприятия");
+                    option = options.FIND;
+                    System.out.println("Переходим в поиск");
                 }
             }
             switch (option) {
@@ -184,7 +191,7 @@ public class Bot extends TelegramLongPollingBot {
                 case BuyingStatus -> {
                     /* я думал по местить в отдельный метод, но решил не засорять методами код. пускай так будет*/
                     variable = Integer.parseInt(txt); // тут выбранный варик
-                    currentEvent = getObjectById(txt); // тут получаем все данные о ивенте
+                    currentEvent = getObjectByElement(txt, "id"); // тут получаем все данные о ивенте
                     chosenEvent(id);
 
                     if (isAdminMode) {
@@ -197,8 +204,6 @@ public class Bot extends TelegramLongPollingBot {
                         option = options.COUNTING_TICKETS;
 
                     }
-                }
-                case WORK -> {
                 }
                 case COUNTING_TICKETS -> {
                     try {
@@ -230,7 +235,7 @@ public class Bot extends TelegramLongPollingBot {
                 case DELETESTATUS -> {
 
                     variable = Integer.parseInt(txt); // тут выбранный варик
-                    currentEvent = getObjectById(txt); // тут получаем все данные о ивенте
+                    currentEvent = getObjectByElement(txt, "id"); // тут получаем все данные о ивенте
                     chosenEvent(id);
                     // TODO: 21.05.2023  если чето не сработает, то проверку на админа вставить
                     deleteEventById(variable);
@@ -267,9 +272,75 @@ public class Bot extends TelegramLongPollingBot {
                         sendText(id, "Неправильный формат данных:\n " + e.getMessage());
                     }
                 }
+                case Next -> {
+                    try {
+                        if (getObjectByElement(txt, "name_").toString() == null) {
+                            throw new Exception("Такого мероприятия у нас нет");
+                        }
+                        sendText(id, getObjectByElement(txt, "name_").toString());
+
+                    } catch (Exception e) {
+                        sendText(id, e.getMessage());
+                        throw new RuntimeException(e);
+                    }
+                    if (isAdminMode) {
+                        option = options.ADMINROOT;
+                    } else option = options.WORK;
+                }
+                case FIND -> {
+
+                    if (isAdminMode) {
+                        option = options.ADMINROOT;
+                    } else option = options.Next;
+                }
             }
         }
     } // тут тхт выступает как кол-во билетов
+
+    public String getUserEvents(int userId) {
+        String str;
+        str = "";
+        try {
+            // Открываем соединение с базой данных
+            Connection conn = DatabaseHandler.getConnection();
+
+            // Создаем SQL-запрос для получения всех записей с заданным id пользователя
+            String sql = "SELECT * FROM UserEvents WHERE id = ?";
+
+            // Создаем PreparedStatement для выполнения запроса и передаем параметры
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, userId);
+
+            // Выполняем запрос и получаем результат
+            ResultSet resultSet = pstmt.executeQuery();
+
+            // Обрабатываем результат и выводим данные
+            while (resultSet.next()) {
+                int eventId = resultSet.getInt("id");
+
+                String eventType = resultSet.getString("event_type");
+
+                String eventName = resultSet.getString("name_");
+                int eventPrice = resultSet.getInt("price");
+                int eventNumberOfTickets = resultSet.getInt("number_of_tickets");
+                String eventData = resultSet.getString("dataEvent");
+
+                str += "\uD83C\uDD94 -> " + eventId + " Вид Мероприятия\uD83D\uDC49  " + eventType
+                        + "\nНазвание меро\uD83D\uDC49 " + eventName + " \uD83D\uDCB2 "
+                        + eventPrice + "₽ \nКол-во Биллетов " + eventNumberOfTickets + "шт. \uD83D\uDDD3️ дата меро " + eventData + "\n";
+            }
+
+            // Закрываем все ресурсы
+            resultSet.close();
+            pstmt.close();
+            conn.close();
+        } catch (SQLException e) {
+            System.out.println("Error retrieving user events: " + e.getMessage());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return str;
+    }
 
     private void addEvent(Events event) throws SQLException {
         Connection conn = null;
@@ -358,9 +429,6 @@ public class Bot extends TelegramLongPollingBot {
             return false;
         }
         try {
-//            Integer.parseInt(str[0]);
-//            Integer.parseInt(str[3]);
-//            Integer.parseInt(str[4]);
             return true;
         } catch (NumberFormatException e) {
             return false;
@@ -377,6 +445,8 @@ public class Bot extends TelegramLongPollingBot {
         currentEvent = new Events(variable, currentEvent.getEventType(), currentEvent.getEventName(),
                 currentEvent.getEventPrice(), currentEvent.getEventNumberOfTickets() - numTickets,
                 currentEvent.getEventData());
+//        updateDataById(variable, currentEvent, "UPDATE Events SET id = ?, event_type = ?, name_ = ?, price = ?, number_of_tickets = ?, dataEvent = ? WHERE id = ?");
+
         updateDataById(variable, currentEvent, "UPDATE Events SET id = ?, event_type = ?, name_ = ?, price = ?, number_of_tickets = ?, dataEvent = ? WHERE id = ?");
 
         user.addUserEvent(Integer.parseInt(String.valueOf(id)),
@@ -423,25 +493,30 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
-    public Events getObjectById(String id) {
+    public Events getObjectByElement(String id, String element) {
         Connection connection = null;
         PreparedStatement statement = null;
         ResultSet resultSet = null;
         Events chosenEvent = null;
 
+        System.out.println("ID -> " + id + "\n element -> " + element);
+
         try {
             connection = DatabaseHandler.getConnection();
-            statement = connection.prepareStatement("SELECT * FROM Events WHERE id = ?");
-            statement.setInt(1, Integer.parseInt(id));
-            resultSet = statement.executeQuery();
+            statement = connection.prepareStatement("SELECT * FROM Events WHERE " + element + " = ?");
 
+            System.out.println("я после запроса");
+            statement.setString(1, id);
+            resultSet = statement.executeQuery();
+            System.out.println(statement);
+            System.out.println(resultSet.toString());
             if (resultSet.next()) {
                 // create object with retrieved data
                 chosenEvent = new Events(resultSet.getInt("id"),
                         resultSet.getString("event_type"), resultSet.getString("name_"),
                         resultSet.getInt("price"), resultSet.getInt("number_of_tickets"), resultSet.getString("dataEvent"));
-//                chosenEvent = new Object(resultSet("id"), resultSet.getString("name"), resultSet.getInt("age"));
             }
+            System.out.println(chosenEvent.toString());
         } catch (SQLException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
@@ -478,12 +553,9 @@ public class Bot extends TelegramLongPollingBot {
                 int eventPrice = resultSet.getInt("price");
                 int eventNumberOfTickets = resultSet.getInt("number_of_tickets");
                 String eventData = resultSet.getString("dataEvent");
-//                str += "\uD83C\uDD94 -> " + eventId + " Вид Мероприятия\uD83D\uDC49  " + eventType
-//                        + " Название меро\uD83D\uDC49 " + eventName + " \uD83D\uDCB2 "
-//                        + eventPrice + "₽ Кол-во Биллетов \uD83D\uDCB2 " + eventNumberOfTickets + "шт. \uD83D\uDDD3️ дата меро " + eventData + "\n";
-                str += "\uD83C\uDD94 -> " + eventId + " || \uD83D\uDC49  " + eventType
-                        + " || \uD83D\uDC49 " + eventName + " || \uD83D\uDCB2 "
-                        + eventPrice + "₽ || " + eventNumberOfTickets + "шт. || \uD83D\uDDD3️ " + eventData + "\n";
+                str += "\uD83C\uDD94 -> " + eventId + " Вид Мероприятия\uD83D\uDC49  " + eventType
+                        + "\nНазвание меро\uD83D\uDC49 " + eventName + " \uD83D\uDCB2 "
+                        + eventPrice + "₽ \nКол-во Биллетов " + eventNumberOfTickets + "шт. \uD83D\uDDD3️ дата меро " + eventData + "\n";
             }
             connection.close();
         } catch (SQLException | ClassNotFoundException e) {
@@ -521,7 +593,6 @@ public class Bot extends TelegramLongPollingBot {
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(who.toString()) // Who are we sending a message to
                 .text(what).build();   // Message content
-
         try {
             execute(sendMessage);
         } catch (TelegramApiException e) {
@@ -531,14 +602,10 @@ public class Bot extends TelegramLongPollingBot {
 
 
     public void sendReplyKeyboardMessage(Long chatId, String text, List<String> options) {
-//        SendMessage message = SendMessage.builder()
-//                .chatId(chatId.toString()) // Who are we sending a message to
-//                .text(text).build().setReplyMarkup(getReplyKeyboardMarkup(options));
         SendMessage message = SendMessage.builder()
                 .chatId(chatId.toString()).
                 text(text)
                 .replyMarkup(getReplyKeyboardMarkup(options)).build();
-
         try {
             execute(message);
         } catch (TelegramApiException e) {
@@ -559,5 +626,4 @@ public class Bot extends TelegramLongPollingBot {
         replyKeyboardMarkup.setOneTimeKeyboard(true);
         return replyKeyboardMarkup;
     }
-
 }
