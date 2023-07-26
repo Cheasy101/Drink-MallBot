@@ -31,7 +31,7 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public String getBotToken() {
-        return "6281846266:AAH90mCXD5EeaJP3l8XBt2z332M9lrZfZzU";
+        return "";
     }
 
     private enum options {
@@ -74,7 +74,7 @@ public class Bot extends TelegramLongPollingBot {
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
-                    sendPhoto(id, "D:\\картинки\\drinkmall.png");
+                    sendPhoto(id, "images/drinkmall.png");
                     String str = "Добро пожаловать в бота KAZAN DRINK-MALL " + EmojiParser.parseToUnicode("‼️") +
                             "\nвы тут впервые " + EmojiParser.parseToUnicode("❓❓") + "\nиспользуйте команду /instruction";
                     sendText(id, str);
@@ -181,7 +181,7 @@ public class Bot extends TelegramLongPollingBot {
                             option = options.DELETESTATUS;
                         }
                         case "Добавить Новое мероприятие" -> {
-                            sendText(id, "Выберите мероприятие (по айди), которое хотите добавить");
+                            sendText(id, "Напишите мероприятие , которое хотите добавить");
                             sendText(id, showEvents(id, "Events"));
                             System.out.println("Должны перейти в состояние добавления мероприятия");
                             option = options.ADDSTATUS;
@@ -457,7 +457,7 @@ public class Bot extends TelegramLongPollingBot {
                 currentEvent.getEventData());
         Thread.sleep(2000);
         sendText(id, "Оплата совершена успешно‼️‼️ ✅✅✅");
-        sendPhoto(id, "D:\\картинки\\succes.jpg");
+        sendPhoto(id, "images/succes.jpg");
     }
 
     public void updateDataById(int id, Events newData, String sqlRequest) {
