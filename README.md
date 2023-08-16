@@ -1,4 +1,4 @@
-![image](https://github.com/Cheasy101/Drink-MallBot/assets/70900183/85346e6d-b4ca-481f-942e-ca61926b9f3a)# Drink-MallBot
+#1 Drink-MallBot
 Trial run. My first Telegram bot that works with a simple database. It has two operating modes: an administrator mode (which can add and delete events) and a user mode, which allows purchasing tickets for events and also accessing the up-to-date event list.
 This is the approximate scenario of using the bot by the user
 
